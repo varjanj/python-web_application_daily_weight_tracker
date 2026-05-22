@@ -1,0 +1,13 @@
+# Virtuálne prostredie (toto nikdy nepúšťame na Git!)
+.venv/
+venv/
+env/
+# Python cache (zbytočné súbory)
+__pycache__/
+*.py[cod]
+# Excel súbory (ak nechceš zdieľať svoje dáta)
+vstupy.xlsx
+vysledky_kurzy.xlsx
+# Logy
+*.log
+*.csv
