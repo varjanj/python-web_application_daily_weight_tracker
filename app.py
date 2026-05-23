@@ -11,6 +11,29 @@ import calculations
 Config.initialize_project()
 logger = logging.getLogger(__name__)
 
+def style_weekly_change(row):
+    """
+    CSS styling function for Streamlit dataframe.
+    Colors the 'Weekly Change' cell light green if negative, light red if positive.
+    """
+    val = row["Weekly Change"]
+    
+    # Default styling for the row (no background color)
+    styles = [""] * len(row)
+    
+    # Find the index of the 'Weekly Change' column in the row
+    change_idx = row.index.get_loc("Weekly Change")
+    
+    # Apply color based on the value
+    if val != "N/A":
+        num_val = float(val)
+        if num_val < 0:
+            styles[change_idx] = "background-color: #d4edda; color: #155724;"  # Light Green
+        elif num_val > 0:
+            styles[change_idx] = "background-color: #f8d7da; color: #721c24;"  # Light Red
+            
+    return styles
+
 def main():
     # Check if this is the first time the app is loaded in this session
     if "app_initialized" not in st.session_state:
@@ -81,17 +104,24 @@ def main():
             # 2. Perform calculations
             current_average = calculations.calculate_weekly_average(df_entries)
             df_blocks = calculations.calculate_block_averages(df_entries)
+            
+            # 3. Calculate the delta between weeks
+            weekly_delta = calculations.calculate_weekly_delta(df_blocks)
 
-            # 3. Display summary metric
+            # 4. Display summary metric with delta arrow
             st.subheader("Summary Metrics")
+            
+            # 5. Formating delta for the metric component (e.g., "-1.2 kg")
+            delta_value = f"{weekly_delta} kg" if weekly_delta is not None else None
+            
             st.metric(
                 label=f"Rolling Average (Last {Config.AVERAGE_DAYS_WINDOW} days)",
-                value=f"{current_average} kg"
-                if current_average > 0
-                else "No data",
+                value=f"{current_average} kg" if current_average > 0 else "No data",
+                delta=delta_value,
+                delta_color="inverse" # "inverse" ensures that weight loss is green and weight gain is red
             )
 
-            # 4. Display Weight Trend Chart
+            # 6. Display Weight Trend Chart
             st.subheader("Weight Trend Over Time")
             if not df_entries.empty:
                 # We tell Streamlit to use 'Date' for X-axis and 'Weight' for Y-axis
@@ -100,14 +130,16 @@ def main():
                 st.info("No data available to generate a chart.")
 
 
-            # 5. Display weekly blocks overview
+            # 7. Display weekly blocks overview
             st.subheader("Weekly Blocks Overview")
             if not df_blocks.empty:
-                st.dataframe(df_blocks, use_container_width=True)
+                # NEW: Apply conditional formatting to the dataframe before rendering
+                styled_df = df_blocks.style.apply(style_weekly_change, axis=1)
+                st.dataframe(styled_df, use_container_width=True)
             else:
                 st.info("No weekly blocks calculated yet.")
 
-            # 5. Display raw history
+            # 8. Display raw history
             st.subheader("Your Weight History")
             if not df_entries.empty:
                 st.dataframe(df_entries, use_container_width=True)

@@ -35,7 +35,7 @@ def calculate_block_averages(df: pd.DataFrame) -> pd.DataFrame:
     """
     # If there is no data, return an empty DataFrame with expected columns
     if df.empty:
-        return pd.DataFrame(columns=["Week", "Block Average"])
+        return pd.DataFrame(columns=["Week", "Block Average", "Weekly Change"])
 
     # 1. Create a copy of DataFrame to avoid modifying the original data
     df_copy = df.copy()
@@ -53,7 +53,41 @@ def calculate_block_averages(df: pd.DataFrame) -> pd.DataFrame:
     # 5. Rename columns to look professional for the user
     grouped.columns = ["Week", "Block Average"]
 
-    # Round the averages to 2 decimal places
-    grouped["Block Average"] = grouped["Block Average"].round(2)
+   # Round the averages to 2 decimal places if they are numbers, otherwise set "N/A"
+    grouped["Block Average"] = grouped["Block Average"].map(
+        lambda x: f"{x:.2f}" if pd.notnull(x) else "N/A"
+    )
+
+    # Calculate weekly change
+    # Pri pretypovaní musíme dáta premeniť na float, ale text "N/A" nahradíme NaN, aby diff() nezlyhal
+    temp_series = grouped["Block Average"].replace("N/A", None).astype(float)
+    diff_values = temp_series.diff()
+
+    # Sformátujeme výsledok na 2 desatinné miesta iba ak je to číslo
+    grouped["Weekly Change"] = diff_values.map(
+        lambda x: f"{x:+.2f}" if pd.notnull(x) else "N/A"
+    )
 
     return grouped
+
+def calculate_weekly_delta(df_blocks: pd.DataFrame) -> float | None:
+    """
+    Calculates the difference between the current week's average and the previous week's average.
+    Returns the float value (positive or negative) or None if there aren't enough weeks to compare.
+    """
+    if len(df_blocks) < 2:
+        return None
+
+    try:
+        # If any of the values is "N/A", we cannot calculate delta
+        if (
+            df_blocks.iloc[-1]["Block Average"] == "N/A"
+            or df_blocks.iloc[-2]["Block Average"] == "N/A"
+        ):
+            return None
+
+        current_week_avg = float(df_blocks.iloc[-1]["Block Average"])
+        previous_week_avg = float(df_blocks.iloc[-2]["Block Average"])
+        return round(current_week_avg - previous_week_avg, 2)
+    except Exception:
+        return None

@@ -40,8 +40,7 @@ def load_weight_data() -> pd.DataFrame:
     # 2. Load the CSV file
     df = pd.read_csv(Config.DATA_FILE_NAME, sep=";")
 
-    # 3. Clean the 'Date' column to show ONLY dates, without time
-    # First, convert text to Pandas datetime object, then extract just the date
-    df["Date"] = pd.to_datetime(df["Date"]).dt.date
+    # FIXED: Added format="mixed" to safely parse any datetime string format
+    df["Date"] = pd.to_datetime(df["Date"], format="mixed").dt.date
 
     return df
