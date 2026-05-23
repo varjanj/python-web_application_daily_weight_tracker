@@ -14,23 +14,20 @@ logger = logging.getLogger(__name__)
 def style_weekly_change(row):
     """
     CSS styling function for Streamlit dataframe.
-    Colors the 'Weekly Change' cell light green if negative, light red if positive.
+    Colors the 'Weekly Change' cell based on central Config colors.
     """
     val = row["Weekly Change"]
-    
-    # Default styling for the row (no background color)
     styles = [""] * len(row)
-    
-    # Find the index of the 'Weekly Change' column in the row
     change_idx = row.index.get_loc("Weekly Change")
     
-    # Apply color based on the value
     if val != "N/A":
         num_val = float(val)
         if num_val < 0:
-            styles[change_idx] = "background-color: #d4edda; color: #155724;"  # Light Green
+            # FIXED: Dynamic styling from Config
+            styles[change_idx] = f"background-color: {Config.COLOR_SUCCESS_BG}; color: {Config.COLOR_SUCCESS_TX};"
         elif num_val > 0:
-            styles[change_idx] = "background-color: #f8d7da; color: #721c24;"  # Light Red
+            # FIXED: Dynamic styling from Config
+            styles[change_idx] = f"background-color: {Config.COLOR_DANGER_BG}; color: {Config.COLOR_DANGER_TX};"
             
     return styles
 
@@ -42,12 +39,12 @@ def main():
 
     # --- SIDEBAR NAVIGATION ---
     with st.sidebar:
-        st.title("Navigation")
+        st.title(Config.SIDEBAR_TITLE)
         
         # Modern navigation menu with icons
         page = option_menu(
             menu_title=None,  # No extra header inside the menu box
-            options=["Insert Weight", "History & Trends"],
+            options=[Config.SIDEBAR_TAB1, Config.SIDEBAR_TAB2],
             icons=["plus-circle", "graph-up-arrow"],  # Bootstrap icons
             menu_icon="cast",
             default_index=0,
@@ -96,7 +93,7 @@ def main():
                     st.error("An error occurred while saving your weight.")
 
         case "History & Trends":
-            st.title("History & Trends")
+            st.title(Config.SIDEBAR_TAB2)
 
             # 1. Load data
             df_entries = database.load_weight_data()
@@ -105,21 +102,54 @@ def main():
             weekly_delta = calculations.calculate_weekly_delta(df_blocks)
 
             # 2. Setup structural TABS (S pamäťou, aby ti po kliknutí na Next neprepínalo záložku)
-            tabs = st.tabs(["📊 Summary & Trend", "🧱 Weekly Blocks", "📜 Full History Log"])
+            tabs = st.tabs(
+                [
+                    Config.TAB_SUMMARY_NAME,
+                    Config.TAB_BLOCKS_NAME,
+                    Config.TAB_HISTORY_NAME,
+                ]
+            )
 
             # --- TAB 1: SUMMARY & GRAPH ONLY ---
             with tabs[0]:
-                st.subheader("Current Overview")
-                delta_value = f"{weekly_delta} kg" if weekly_delta is not None else None
-                st.metric(
-                    label=f"Rolling Average (Last {Config.AVERAGE_DAYS_WINDOW} days)",
-                    value=f"{current_average} kg" if current_average > 0 else "No data",
-                    delta=delta_value,
-                    delta_color="inverse"
-                )
+                st.subheader(Config.SUBHEADER1)
+                
+                # Calculate the 4-week forecast using our new function
+                predicted_weight = calculations.calculate_forecast(current_average, df_blocks, weeks_ahead=Config.FORECAST_WEEKS_AHEAD)
+                
+                # Create two horizontal columns for side-by-side metrics
+                col_left, col_right = st.columns(2)
+                
+                with col_left:
+                    delta_value = f"{weekly_delta} kg" if weekly_delta is not None else None
+                    st.metric(
+                        label=f"Rolling Average (Last {Config.AVERAGE_DAYS_WINDOW} days)",
+                        value=f"{current_average} kg" if current_average > 0 else "No data",
+                        delta=delta_value,
+                        delta_color="inverse"
+                    )
+                
+                with col_right:
+                    if predicted_weight is not None:
+                        # Calculate total expected change over 4 weeks for the delta label
+                        total_predicted_change = round(predicted_weight - current_average, 2)
+                        delta_forecast = f"{total_predicted_change:+.2f} kg"
+                        
+                        st.metric(
+                            label=f"Forecast (In {Config.FORECAST_WEEKS_AHEAD} Weeks)",
+                            value=f"{predicted_weight} kg",
+                            delta=delta_forecast,
+                            delta_color="inverse" # Keeps weight loss green, gain red
+                        )
+                    else:
+                        st.metric(
+                            label=f"Forecast (In {Config.FORECAST_WEEKS_AHEAD} Weeks)",
+                            value="Need more data",
+                            help="We need at least 2 consecutive weeks with data to predict your trend."
+                        )
                 
                 st.markdown("---")
-                st.subheader("Weight Trend Chart")
+                st.subheader(Config.SUBHEADER2)
                 if not df_entries.empty:
                     st.line_chart(data=df_entries, x="Date", y="Weight")
                 else:
@@ -127,7 +157,7 @@ def main():
 
             # --- TAB 2: WEEKLY BLOCKS ONLY ---
             with tabs[1]:
-                st.subheader("Weekly Blocks Overview")
+                st.subheader(Config.SUBHEADER3)
                 if not df_blocks.empty:
                     df_blocks_display = df_blocks.copy()
                     df_blocks_display.index = df_blocks_display.index + 1
@@ -139,10 +169,10 @@ def main():
 
             # --- TAB 3: HISTORY LOG WITH PAGES (PAGINATION) ---
             with tabs[2]:
-                st.subheader("Complete History Log")
+                st.subheader(Config.SUBHEADER4)
                 
                 if not df_entries.empty:
-                    ROWS_PER_PAGE = 10
+                    ROWS_PER_PAGE = Config.PAGINATION_ROWS_PER_PAGE
                     
                     if "current_page" not in st.session_state:
                         st.session_state.current_page = 0

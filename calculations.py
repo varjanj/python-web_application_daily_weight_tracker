@@ -91,3 +91,29 @@ def calculate_weekly_delta(df_blocks: pd.DataFrame) -> float | None:
         return round(current_week_avg - previous_week_avg, 2)
     except Exception:
         return None
+    
+def calculate_forecast(current_avg: float, df_blocks: pd.DataFrame, weeks_ahead: int = 4) -> float | None:
+    """
+    Predicts the future weight based on the latest valid weekly change.
+    Calculates: current_weight + (weeks_ahead * latest_weekly_change)
+    """
+    if df_blocks.empty or len(df_blocks) < 2:
+        return None
+    
+    try:
+        # Get the latest row's change, if it's N/A, try the previous one
+        latest_change_str = df_blocks.iloc[-1]["Weekly Change"]
+        if latest_change_str == "N/A" and len(df_blocks) >= 3:
+            latest_change_str = df_blocks.iloc[-2]["Weekly Change"]
+            
+        if latest_change_str == "N/A":
+            return None
+            
+        # Clean the string (remove '+' if present) and convert to float
+        latest_change = float(latest_change_str.replace("+", ""))
+        
+        # Calculate the future target
+        forecast_weight = current_avg + (weeks_ahead * latest_change)
+        return round(forecast_weight, 2)
+    except Exception:
+        return None
