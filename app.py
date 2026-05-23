@@ -98,56 +98,91 @@ def main():
         case "History & Trends":
             st.title("History & Trends")
 
-            # 1. Load the data from CSV
+            # 1. Load data
             df_entries = database.load_weight_data()
-
-            # 2. Perform calculations
-            current_average = calculations.calculate_weekly_average(df_entries)
             df_blocks = calculations.calculate_block_averages(df_entries)
-            
-            # 3. Calculate the delta between weeks
+            current_average = calculations.calculate_weekly_average(df_entries)
             weekly_delta = calculations.calculate_weekly_delta(df_blocks)
 
-            # 4. Display summary metric with delta arrow
-            st.subheader("Summary Metrics")
-            
-            # 5. Formating delta for the metric component (e.g., "-1.2 kg")
-            delta_value = f"{weekly_delta} kg" if weekly_delta is not None else None
-            
-            st.metric(
-                label=f"Rolling Average (Last {Config.AVERAGE_DAYS_WINDOW} days)",
-                value=f"{current_average} kg" if current_average > 0 else "No data",
-                delta=delta_value,
-                delta_color="inverse" # "inverse" ensures that weight loss is green and weight gain is red
-            )
+            # 2. Setup structural TABS (S pamäťou, aby ti po kliknutí na Next neprepínalo záložku)
+            tabs = st.tabs(["📊 Summary & Trend", "🧱 Weekly Blocks", "📜 Full History Log"])
 
-            # 6. Display Weight Trend Chart
-            st.subheader("Weight Trend Over Time")
-            if not df_entries.empty:
-                # We tell Streamlit to use 'Date' for X-axis and 'Weight' for Y-axis
-                st.line_chart(data=df_entries, x="Date", y="Weight")
-            else:
-                st.info("No data available to generate a chart.")
-
-
-            # 7. Display weekly blocks overview
-            st.subheader("Weekly Blocks Overview")
-            if not df_blocks.empty:
-                # NEW: Apply conditional formatting to the dataframe before rendering
-                styled_df = df_blocks.style.apply(style_weekly_change, axis=1)
-                st.dataframe(styled_df, use_container_width=True)
-            else:
-                st.info("No weekly blocks calculated yet.")
-
-            # 8. Display raw history
-            st.subheader("Your Weight History")
-            if not df_entries.empty:
-                st.dataframe(df_entries, use_container_width=True)
-            else:
-                st.info(
-                    "No weight entries found yet. Go to 'Insert Weight' to add some!"
+            # --- TAB 1: SUMMARY & GRAPH ONLY ---
+            with tabs[0]:
+                st.subheader("Current Overview")
+                delta_value = f"{weekly_delta} kg" if weekly_delta is not None else None
+                st.metric(
+                    label=f"Rolling Average (Last {Config.AVERAGE_DAYS_WINDOW} days)",
+                    value=f"{current_average} kg" if current_average > 0 else "No data",
+                    delta=delta_value,
+                    delta_color="inverse"
                 )
+                
+                st.markdown("---")
+                st.subheader("Weight Trend Chart")
+                if not df_entries.empty:
+                    st.line_chart(data=df_entries, x="Date", y="Weight")
+                else:
+                    st.info("No data available to generate a chart.")
 
+            # --- TAB 2: WEEKLY BLOCKS ONLY ---
+            with tabs[1]:
+                st.subheader("Weekly Blocks Overview")
+                if not df_blocks.empty:
+                    df_blocks_display = df_blocks.copy()
+                    df_blocks_display.index = df_blocks_display.index + 1
+                    
+                    styled_df = df_blocks_display.style.apply(style_weekly_change, axis=1)
+                    st.dataframe(styled_df, use_container_width=True, hide_index=True)
+                else:
+                    st.info("No weekly blocks calculated yet.")
+
+            # --- TAB 3: HISTORY LOG WITH PAGES (PAGINATION) ---
+            with tabs[2]:
+                st.subheader("Complete History Log")
+                
+                if not df_entries.empty:
+                    ROWS_PER_PAGE = 10
+                    
+                    if "current_page" not in st.session_state:
+                        st.session_state.current_page = 0
+                        
+                    total_rows = len(df_entries)
+                    max_pages = (total_rows - 1) // ROWS_PER_PAGE + 1
+                    
+                    start_idx = st.session_state.current_page * ROWS_PER_PAGE
+                    end_idx = start_idx + ROWS_PER_PAGE
+                    df_page = df_entries.iloc[start_idx:end_idx]
+                    
+                    # Show only first page (10 rows)
+                    df_page_display = df_page.copy()
+                    df_page_display.index = df_page_display.index + 1
+                    st.dataframe(df_page_display, use_container_width=True)
+                    
+                    # Control buttons
+                    col1, col2, col3 = st.columns([1, 2, 1])
+                    
+                    with col1:
+                        if st.button("⬅️ Previous") and st.session_state.current_page > 0:
+                            st.session_state.current_page -= 1
+                            st.rerun()
+                            
+                    with col2:
+                        st.markdown(
+                            f"<p style='text-align: center; color: gray; padding-top: 5px;'>"
+                            f"Page {st.session_state.current_page + 1} of {max_pages} ({total_rows} entries)"
+                            f"</p>", 
+                            unsafe_allow_html=True
+                        )
+                        
+                    with col3:
+                        if st.button("Next ➡️") and st.session_state.current_page < max_pages - 1:
+                            st.session_state.current_page += 1
+                            st.rerun()
+                else:
+                    st.info("No weight entries found yet.")
+
+            
         case _:
             # Default fallback (safety net)
             st.error("Page not found.")
