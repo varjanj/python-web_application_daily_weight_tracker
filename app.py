@@ -151,7 +151,9 @@ def main():
                 st.markdown("---")
                 st.subheader(Config.SUBHEADER2)
                 if not df_entries.empty:
-                    st.line_chart(data=df_entries, x="Date", y="Weight")
+                    df_chart = df_entries.copy()
+                    df_chart["Date"] = df_chart["Date"].astype(str)
+                    st.line_chart(data=df_chart, x="Date", y="Weight")
                 else:
                     st.info("No data available to generate a chart.")
 
@@ -169,25 +171,28 @@ def main():
 
             # --- TAB 3: HISTORY LOG WITH PAGES (PAGINATION) ---
             with tabs[2]:
-                st.subheader(Config.SUBHEADER4)
+                st.subheader("Complete History Log")
                 
                 if not df_entries.empty:
+                    # Sort data Descendingly
+                    df_history_sorted = df_entries.sort_values(by="Date", ascending=False).reset_index(drop=True)
+                    
                     ROWS_PER_PAGE = Config.PAGINATION_ROWS_PER_PAGE
                     
                     if "current_page" not in st.session_state:
                         st.session_state.current_page = 0
                         
-                    total_rows = len(df_entries)
+                    total_rows = len(df_history_sorted)
                     max_pages = (total_rows - 1) // ROWS_PER_PAGE + 1
                     
                     start_idx = st.session_state.current_page * ROWS_PER_PAGE
                     end_idx = start_idx + ROWS_PER_PAGE
-                    df_page = df_entries.iloc[start_idx:end_idx]
                     
-                    # Show only first page (10 rows)
-                    df_page_display = df_page.copy()
-                    df_page_display.index = df_page_display.index + 1
-                    st.dataframe(df_page_display, use_container_width=True)
+                    # Cut fromm sorted data
+                    df_page = df_history_sorted.iloc[start_idx:end_idx]
+                    
+                    # Hide index and show
+                    st.dataframe(df_page, use_container_width=True, hide_index=True)
                     
                     # Control buttons
                     col1, col2, col3 = st.columns([1, 2, 1])

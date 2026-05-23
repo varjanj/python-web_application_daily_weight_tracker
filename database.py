@@ -31,7 +31,7 @@ def save_weight_entry(weight: float):
 def load_weight_data() -> pd.DataFrame:
     """
     Loads the weight data from the CSV file and returns a Pandas DataFrame.
-    If the file does not exist, returns an empty DataFrame with expected columns.
+    Guarantees correct European date format parsing.
     """
     # 1. Check if the file exists
     if not os.path.exists(Config.DATA_FILE_NAME):
@@ -40,7 +40,13 @@ def load_weight_data() -> pd.DataFrame:
     # 2. Load the CSV file
     df = pd.read_csv(Config.DATA_FILE_NAME, sep=";")
 
-    # FIXED: Added format="mixed" to safely parse any datetime string format
-    df["Date"] = pd.to_datetime(df["Date"], format="mixed").dt.date
+    df["Date"] = pd.to_datetime(df["Date"], dayfirst=True)
+
+    # Empty rows cleansing
+    df = df.dropna(subset=["Date", "Weight"])
+    df = df.sort_values(by="Date", ascending=True).reset_index(drop=True)
+
+    # Date format YYYY-MM-DD
+    df["Date"] = df["Date"].dt.date
 
     return df
