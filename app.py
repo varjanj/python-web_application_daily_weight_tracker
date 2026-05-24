@@ -171,7 +171,7 @@ def main():
 
             # --- TAB 3: HISTORY LOG WITH PAGES (PAGINATION) ---
             with tabs[2]:
-                st.subheader("Complete History Log")
+                st.subheader(Config.SUBHEADER4)
                 
                 if not df_entries.empty:
                     # Sort data Descendingly
