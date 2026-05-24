@@ -40,7 +40,7 @@ def load_weight_data() -> pd.DataFrame:
     # 2. Load the CSV file
     df = pd.read_csv(Config.DATA_FILE_NAME, sep=";")
 
-    df["Date"] = pd.to_datetime(df["Date"], dayfirst=True)
+    df["Date"] = pd.to_datetime(df["Date"], format="mixed", dayfirst=True)
 
     # Empty rows cleansing
     df = df.dropna(subset=["Date", "Weight"])
