@@ -55,7 +55,7 @@ def load_weight_data() -> pd.DataFrame:
         df = df.rename(columns={"date": "Date", "weight": "Weight"})
 
         # 5. Parse mixed datetime formats and sort chronologically
-        df["Date"] = pd.to_datetime(df["Date"], format="mixed", dayfirst=True)
+        df["Date"] = pd.to_datetime(df["Date"], format="%Y-%m-%d", errors="coerce")
         df = df.dropna(subset=["Date", "Weight"])
         df = df.sort_values(by="Date", ascending=True).reset_index(drop=True)
 
