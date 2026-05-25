@@ -11,3 +11,5 @@ vysledky_kurzy.xlsx
 # Logy
 *.log
 *.csv
+*.toml
+.streamlit/secrets.toml
