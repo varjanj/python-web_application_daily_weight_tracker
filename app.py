@@ -5,6 +5,7 @@ from streamlit_option_menu import option_menu
 import logging
 import database
 import calculations
+import time
 
 
 # Initialize project settings and logging at the very start
@@ -110,6 +111,8 @@ def main():
                         # Show warm, explicit success message
                         st.success(f"Success! The entry with weight **{w_val} kg** logged on **{d_val}** has been removed.")
                         
+                        time.sleep(2.0)
+
                         # Force a slight pause so the user can read it, then rerun (optional, but st.rerun is fast)
                         st.rerun()
                     else:
