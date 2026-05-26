@@ -92,6 +92,24 @@ def main():
                     logger.error(f"Failed to save weight entry: {str(e)}")
                     st.error("An error occurred while saving your weight.")
 
+            st.markdown("---")
+            st.subheader("Data Management")
+            st.write("Entered an incorrect value? You can delete the most recent log entry.")
+
+            # Logic Delete Last Entry
+            if st.button("🗑️ Delete Last Entry", type="secondary", use_container_width=True):
+                try:
+                    success = database.delete_last_entry()
+                    if success:
+                        logger.info("Successfully deleted the last weight entry.")
+                        st.success("The last entry has been successfully deleted!")
+                        st.rerun()
+                    else:
+                        st.warning("No data found in the database to delete.")
+                except Exception as e:
+                    logger.error(f"Failed to delete last weight entry: {str(e)}")
+                    st.error("An error occurred while deleting the entry.")
+
         case "History & Trends":
             st.title(Config.SIDEBAR_TAB2)
 
