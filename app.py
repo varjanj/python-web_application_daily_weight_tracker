@@ -92,10 +92,6 @@ def main():
                     logger.error(f"Failed to save weight entry: {str(e)}")
                     st.error("An error occurred while saving your weight.")
 
-            st.markdown("---")
-            st.subheader("Data Management")
-            st.write("Entered an incorrect value? You can delete the most recent log entry.")
-
             # Logic Delete Last Entry
             st.markdown("---")
             st.subheader("Data Management")
