@@ -10,16 +10,20 @@ key: str = st.secrets["supabase"]["key"]
 supabase: Client = create_client(url, key)
 
 
-def save_weight_entry(weight: float) -> bool:
+def save_weight_entry(weight: float, user_id: str) -> bool:
     """
-    Saves a new weight entry with the current timestamp into the Supabase cloud database.
+    Saves a new weight entry with the current timestamp linked to a specific user into the Supabase cloud database.
     """
     try:
         # 1. Get current date and time formatted as YYYY-MM-DD HH:MM:SS
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # 2. Create a payload matching database snake_case columns
-        data_to_insert = {"date": current_time, "weight": float(weight)}
+        # 2. Create a payload matching database snake_case columns including user_id
+        data_to_insert = {
+            "date": current_time, 
+            "weight": float(weight),
+            "user_id": user_id
+        }
 
         # 3. Insert the record into Supabase weight_entries table
         supabase.table("weight_entries").insert(data_to_insert).execute()

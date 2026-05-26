@@ -6,6 +6,7 @@ import logging
 import database
 import calculations
 import time
+import auth
 
 
 # Initialize project settings and logging at the very start
@@ -33,6 +34,39 @@ def style_weekly_change(row):
     return styles
 
 def main():
+    if "user" not in st.session_state:
+        st.title("Welcome to Weight Tracker")
+        
+        # Create two tabs for seamless user experience
+        tab1, tab2 = st.tabs(["🔒 Sign In", "📝 Sign Up"])
+        
+        with tab1:
+            st.subheader("Login to your account")
+            login_email = st.text_input("Email", key="login_email")
+            login_password = st.text_input("Password", type="password", key="login_password")
+            if st.button("Log In", type="primary", use_container_width=True):
+                user_data = auth.sign_in_user(login_email, login_password)
+                if user_data:
+                    st.session_state["user"] = user_data
+                    st.success("Logged in successfully!")
+                    st.rerun()
+                    
+        with tab2:
+            st.subheader("Create a new account")
+            reg_email = st.text_input("Email", key="reg_email")
+            reg_password = st.text_input("Password", type="password", key="reg_password")
+            if st.button("Register", use_container_width=True):
+                if auth.sign_up_user(reg_email, reg_password):
+                    st.success("Registration successful! You can now log in.")
+                    
+        # Stop executing the main app layout if user is anonymous
+        st.stop()
+
+    # Vytiahneme session dáta prihláseného človeka
+    logged_in_user = st.session_state["user"]
+    user_id = logged_in_user["user_id"]
+    user_email = logged_in_user["email"]    
+
     # Check if this is the first time the app is loaded in this session
     if "app_initialized" not in st.session_state:
         logger.info("Application started successfully (First load).")
@@ -111,6 +145,7 @@ def main():
                         # Show warm, explicit success message
                         st.success(f"Success! The entry with weight **{w_val} kg** logged on **{d_val}** has been removed.")
                         
+                        # Freeze the app for 2 seconds so you can comfortably read the green box
                         time.sleep(2.0)
 
                         # Force a slight pause so the user can read it, then rerun (optional, but st.rerun is fast)
