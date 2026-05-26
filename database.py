@@ -69,29 +69,32 @@ def load_weight_data() -> pd.DataFrame:
         st.error(f"Error loading data from Supabase: {e}")
         return pd.DataFrame(columns=["Date", "Weight"])
     
-def delete_last_entry() -> bool:
+def delete_last_entry() -> dict | None:
     """
-    Deletes the most recent weight entry (based on the latest date) from the table.
+    Deletes the most recent weight entry and returns its data (date and weight).
+    Returns None if the database is empty.
     """
     try:
-        # Fetch the ID of the last entry by sorting by date descending and limiting to 1 row
+        # Fetch the ID, date, and weight of the last entry
         last_row = (
             supabase.table("weight_entries")
-            .select("id")
+            .select("id, date, weight")
             .order("date", desc=True)
             .limit(1)
             .execute()
         )
         
-        # If the database is empty, there is nothing to delete
         if not last_row.data:
-            return False
+            return None
             
-        last_id = last_row.data[0]["id"]
+        deleted_data = last_row.data[0]
+        last_id = deleted_data["id"]
         
         # Delete the row matching the retrieved ID
         supabase.table("weight_entries").delete().eq("id", last_id).execute()
-        return True
+        
+        # Return the data we just deleted so we can display it
+        return deleted_data
     except Exception as e:
         st.error(f"Error deleting last entry: {e}")
-        return False
+        return None

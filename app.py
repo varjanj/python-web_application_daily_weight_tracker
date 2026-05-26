@@ -97,19 +97,30 @@ def main():
             st.write("Entered an incorrect value? You can delete the most recent log entry.")
 
             # Logic Delete Last Entry
+            st.markdown("---")
+            st.subheader("Data Management")
+            st.write("Entered an incorrect value? You can delete the most recent log entry.")
+
             if st.button("🗑️ Delete Last Entry", type="secondary", use_container_width=True):
                 try:
-                    success = database.delete_last_entry()
-                    if success:
-                        logger.info("Successfully deleted the last weight entry.")
-                        st.success("The last entry has been successfully deleted!")
+                    deleted_entry = database.delete_last_entry()
+                    if deleted_entry:
+                        # Format the output data for the user
+                        w_val = deleted_entry['weight']
+                        d_val = deleted_entry['date']
+                        
+                        logger.info(f"Successfully deleted the last weight entry: {w_val} kg from {d_val}")
+                        
+                        # Show warm, explicit success message
+                        st.success(f"Success! The entry with weight **{w_val} kg** logged on **{d_val}** has been removed.")
+                        
+                        # Force a slight pause so the user can read it, then rerun (optional, but st.rerun is fast)
                         st.rerun()
                     else:
                         st.warning("No data found in the database to delete.")
                 except Exception as e:
                     logger.error(f"Failed to delete last weight entry: {str(e)}")
                     st.error("An error occurred while deleting the entry.")
-
         case "History & Trends":
             st.title(Config.SIDEBAR_TAB2)
 
