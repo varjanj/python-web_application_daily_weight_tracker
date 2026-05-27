@@ -116,13 +116,18 @@ def main():
             # Logic when user clicks the Confirm button
             if submit_button:
                 try:
-                    database.save_weight_entry(weight_value)
+                    # UPDATED: Added user_id parameter
+                    database.save_weight_entry(weight_value, user_id=user_id)
                     logger.info(
-                        f"Successfully saved weight entry: {weight_value} kg"
+                        f"Successfully saved weight entry: {weight_value} kg for user {user_id}"
                     )
                     st.success(
                         f"Weight {weight_value} kg has been successfully saved!"
                     )
+
+                    time.sleep(2.0)
+
+                    st.rerun()  # Refresh screen to update graph
                 except Exception as e:
                     logger.error(f"Failed to save weight entry: {str(e)}")
                     st.error("An error occurred while saving your weight.")
